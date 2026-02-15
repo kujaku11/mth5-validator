@@ -29,35 +29,45 @@ import sys
 from pathlib import Path
 
 
+def safe_print(message):
+    """Print with fallback for encoding issues (Windows CP1252)."""
+    try:
+        print(message)
+    except UnicodeEncodeError:
+        # Fallback: replace problematic Unicode chars
+        message = message.replace('✓', '[OK]').replace('✗', '[X]')
+        print(message.encode('ascii', 'replace').decode('ascii'))
+
+
 def check_dependencies():
     """Check that required dependencies are installed."""
-    print("Checking dependencies...")
+    safe_print("Checking dependencies...")
 
     # Check h5py
     try:
         import h5py
 
-        print(f"  ✓ h5py {h5py.__version__}")
+        safe_print(f"  [OK] h5py {h5py.__version__}")
     except ImportError:
-        print("  ✗ h5py not found - installing...")
+        safe_print("  [X] h5py not found - installing...")
         os.system(f"{sys.executable} -m pip install h5py")
 
     # Check PyInstaller
     try:
         import PyInstaller
 
-        print(f"  ✓ PyInstaller {PyInstaller.__version__}")
+        safe_print(f"  [OK] PyInstaller {PyInstaller.__version__}")
         return True
     except ImportError:
-        print("  ✗ PyInstaller not found - installing...")
+        safe_print("  [X] PyInstaller not found - installing...")
         os.system(f"{sys.executable} -m pip install pyinstaller")
         try:
             import PyInstaller
 
-            print(f"  ✓ PyInstaller {PyInstaller.__version__} installed")
+            safe_print(f"  [OK] PyInstaller {PyInstaller.__version__} installed")
             return True
         except ImportError:
-            print("  ✗ Failed to install PyInstaller")
+            safe_print("  [X] Failed to install PyInstaller")
             return False
 
 
@@ -78,24 +88,24 @@ def clean_build_dirs():
     dirs_to_clean = ["build", "dist"]
     files_to_clean = ["*.spec"]
 
-    print("\nCleaning previous build artifacts...")
+    safe_print("\nCleaning previous build artifacts...")
 
     for dir_name in dirs_to_clean:
         if os.path.exists(dir_name):
             try:
                 time.sleep(0.1)
                 shutil.rmtree(dir_name, onerror=handle_remove_readonly)
-                print(f"  Removed {dir_name}/")
+                safe_print(f"  Removed {dir_name}/")
             except Exception as e:
-                print(f"  Warning: Could not fully remove {dir_name}/ ({e})")
+                safe_print(f"  Warning: Could not fully remove {dir_name}/ ({e})")
 
     for pattern in files_to_clean:
         for file in Path(".").glob(pattern):
             try:
                 file.unlink()
-                print(f"  Removed {file}")
+                safe_print(f"  Removed {file}")
             except Exception as e:
-                print(f"  Warning: Could not remove {file} ({e})")
+                safe_print(f"  Warning: Could not remove {file} ({e})")
 
 
 def build_executable():
@@ -107,8 +117,8 @@ def build_executable():
     if system == "Windows":
         exe_name += ".exe"
 
-    print(f"\nBuilding Standalone MTH5 Validator for {system}...")
-    print("=" * 80)
+    safe_print(f"\nBuilding Standalone MTH5 Validator for {system}...")
+    safe_print("=" * 80)
 
     # Simple PyInstaller arguments - h5py + minimal numpy
     args = [
@@ -142,21 +152,21 @@ def build_executable():
         "--log-level=WARN",
     ]
 
-    print("\nPyInstaller configuration:")
-    print(f"  Entry point: mth5_validator_standalone.py")
-    print(f"  Output name: {exe_name}")
-    print(f"  Mode: Single file")
-    print(f"  Dependencies: h5py only")
-    print(f"  Platform: {system}")
+    safe_print("\nPyInstaller configuration:")
+    safe_print(f"  Entry point: mth5_validator_standalone.py")
+    safe_print(f"  Output name: {exe_name}")
+    safe_print(f"  Mode: Single file")
+    safe_print(f"  Dependencies: h5py only")
+    safe_print(f"  Platform: {system}")
 
     try:
         PyInstaller.__main__.run(args)
-        print("\n" + "=" * 80)
-        print("✓ Build completed successfully!")
+        safe_print("\n" + "=" * 80)
+        safe_print("[OK] Build completed successfully!")
         return True
     except Exception as e:
-        print("\n" + "=" * 80)
-        print(f"✗ Build failed: {e}")
+        safe_print("\n" + "=" * 80)
+        safe_print(f"[X] Build failed: {e}")
         return False
 
 
@@ -168,27 +178,27 @@ def test_executable():
     )
 
     if not exe_path.exists():
-        print(f"\n✗ Executable not found: {exe_path}")
+        safe_print(f"\n[X] Executable not found: {exe_path}")
         return False
 
-    print(f"\nTesting executable: {exe_path}")
-    print("=" * 80)
+    safe_print(f"\nTesting executable: {exe_path}")
+    safe_print("=" * 80)
 
     # Get file size
     size_mb = exe_path.stat().st_size / (1024 * 1024)
-    print(f"  Size: {size_mb:.1f} MB")
+    safe_print(f"  Size: {size_mb:.1f} MB")
 
     # Test help command
-    print("\n  Running: mth5-validator --help")
-    print("-" * 80)
+    safe_print("\n  Running: mth5-validator --help")
+    safe_print("-" * 80)
     result = os.system(f'"{exe_path}" --help')
 
     if result == 0:
-        print("-" * 80)
-        print("✓ Executable test passed!")
+        safe_print("-" * 80)
+        safe_print("[OK] Executable test passed!")
         return True
     else:
-        print("✗ Executable test failed")
+        safe_print("[X] Executable test failed")
         return False
 
 
@@ -198,66 +208,66 @@ def print_summary():
     exe_name = "mth5-validator.exe" if system == "Windows" else "mth5-validator"
     exe_path = Path("dist") / exe_name
 
-    print("\n" + "=" * 80)
-    print("BUILD SUMMARY")
-    print("=" * 80)
+    safe_print("\n" + "=" * 80)
+    safe_print("BUILD SUMMARY")
+    safe_print("=" * 80)
 
     if exe_path.exists():
         size_mb = exe_path.stat().st_size / (1024 * 1024)
-        print(f"\n✓ Standalone executable created: {exe_path.absolute()}")
-        print(f"  Size: {size_mb:.1f} MB (lightweight - h5py only!)")
-        print(f"  Platform: {system}")
+        safe_print(f"\n[OK] Standalone executable created: {exe_path.absolute()}")
+        safe_print(f"  Size: {size_mb:.1f} MB (lightweight - h5py only!)")
+        safe_print(f"  Platform: {system}")
 
-        print("\n" + "-" * 80)
-        print("USAGE")
-        print("-" * 80)
-        print(f"\n  Basic validation:")
-        print(f"    {exe_path} validate data.mth5")
-        print(f"\n  Verbose output:")
-        print(f"    {exe_path} validate data.mth5 --verbose")
-        print(f"\n  Check data integrity:")
-        print(f"    {exe_path} validate data.mth5 --check-data")
-        print(f"\n  JSON output:")
-        print(f"    {exe_path} validate data.mth5 --json")
+        safe_print("\n" + "-" * 80)
+        safe_print("USAGE")
+        safe_print("-" * 80)
+        safe_print(f"\n  Basic validation:")
+        safe_print(f"    {exe_path} validate data.mth5")
+        safe_print(f"\n  Verbose output:")
+        safe_print(f"    {exe_path} validate data.mth5 --verbose")
+        safe_print(f"\n  Check data integrity:")
+        safe_print(f"    {exe_path} validate data.mth5 --check-data")
+        safe_print(f"\n  JSON output:")
+        safe_print(f"    {exe_path} validate data.mth5 --json")
 
-        print("\n" + "-" * 80)
-        print("ADVANTAGES")
-        print("-" * 80)
-        print(f"\n  ✓ Small size: ~20-30 MB (vs 150+ MB for full mth5)")
-        print(f"  ✓ Simple dependencies: h5py only")
-        print(f"  ✓ No scipy/obspy/matplotlib bloat")
-        print(f"  ✓ Fast startup and execution")
-        print(f"  ✓ Standalone - no Python install needed")
+        safe_print("\n" + "-" * 80)
+        safe_print("ADVANTAGES")
+        safe_print("-" * 80)
+        safe_print(f"\n  + Small size: ~20-30 MB (vs 150+ MB for full mth5)")
+        safe_print(f"  + Simple dependencies: h5py only")
+        safe_print(f"  + No scipy/obspy/matplotlib bloat")
+        safe_print(f"  + Fast startup and execution")
+        safe_print(f"  + Standalone - no Python install needed")
 
-        print("\n" + "-" * 80)
-        print("DISTRIBUTION")
-        print("-" * 80)
-        print(f"\n  The executable in dist/ can be distributed standalone.")
-        print(f"  Users do NOT need Python or any dependencies installed.")
-        print(f"  Copy {exe_name} to any system and run it directly.")
+        safe_print("\n" + "-" * 80)
+        safe_print("DISTRIBUTION")
+        safe_print("-" * 80)
+        safe_print(f"\n  The executable in dist/ can be distributed standalone.")
+        safe_print(f"  Users do NOT need Python or any dependencies installed.")
+        safe_print(f"  Copy {exe_name} to any system and run it directly.")
     else:
-        print(f"\n✗ Build failed - executable not found")
+        safe_print(f"\n[X] Build failed - executable not found")
 
-    print("\n" + "=" * 80)
+    safe_print("\n" + "=" * 80)
 
 
 def main():
     """Main build process."""
-    print("=" * 80)
-    print("MTH5 Standalone Validator - Executable Builder")
-    print("=" * 80)
-    print(f"\nPlatform: {platform.system()} {platform.machine()}")
-    print(f"Python: {sys.version.split()[0]}")
+    safe_print("=" * 80)
+    safe_print("MTH5 Standalone Validator - Executable Builder")
+    safe_print("=" * 80)
+    safe_print(f"\nPlatform: {platform.system()} {platform.machine()}")
+    safe_print(f"Python: {sys.version.split()[0]}")
 
     # Check standalone script exists
     if not Path("mth5_validator_standalone.py").exists():
-        print("\n✗ Error: mth5_validator_standalone.py not found!")
-        print("  Make sure you're running this from the mth5 repository root.")
+        safe_print("\n[X] Error: mth5_validator_standalone.py not found!")
+        safe_print("  Make sure you're running this from the mth5 repository root.")
         sys.exit(1)
 
     # Check dependencies
     if not check_dependencies():
-        print("\n✗ Cannot proceed without required dependencies")
+        safe_print("\n[X] Cannot proceed without required dependencies")
         sys.exit(1)
 
     # Clean previous builds
@@ -265,7 +275,7 @@ def main():
 
     # Build executable
     if not build_executable():
-        print("\n✗ Build failed")
+        safe_print("\n[X] Build failed")
         sys.exit(1)
 
     # Test executable

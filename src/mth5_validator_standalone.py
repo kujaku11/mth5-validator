@@ -129,9 +129,9 @@ class ValidationResults:
         print(f"{'=' * 80}")
 
         if self.is_valid:
-            print(f"✓ VALID - File passed all validation checks")
+            print(f"[OK] VALID - File passed all validation checks")
         else:
-            print(f"✗ INVALID - File has {self.error_count} error(s)")
+            print(f"[INVALID] File has {self.error_count} error(s)")
 
         print(f"\nSummary:")
         print(f"  Errors:   {self.error_count}")
