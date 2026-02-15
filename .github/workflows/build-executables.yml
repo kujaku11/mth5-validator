@@ -81,7 +81,23 @@ jobs:
         run: |
           cp dist/${{ matrix.artifact_name }} dist/${{ matrix.asset_name }}
       
-      - name: Upload artifact
+      - name: Package Windows executable in zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: src/dist
+        run: |
+          Compress-Archive -Path ${{ matrix.asset_name }} -DestinationPath ${{ matrix.asset_name }}.zip
+      
+      - name: Upload artifact (Windows zip)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}.zip
+          path: src/dist/${{ matrix.asset_name }}.zip
+          retention-days: 30
+      
+      - name: Upload artifact (Linux/macOS)
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}
@@ -93,10 +109,26 @@ jobs:
         working-directory: src/dist
         run: |
           if [ "${{ runner.os }}" == "Windows" ]; then
-            certutil -hashfile ${{ matrix.asset_name }} SHA256 > ${{ matrix.asset_name }}.sha256
+            certutil -hashfile ${{ matrix.asset_name }} SHA256 | findstr /v ":" | findstr /v "SHA" > ${{ matrix.asset_name }}.sha256
           else
             shasum -a 256 ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
           fi
+      
+      - name: Create checksum for Windows zip
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: src/dist
+        run: |
+          $hash = (Get-FileH
+      
+      - name: Upload checksum for Windows zip
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}.zip.sha256
+          path: src/dist/${{ matrix.asset_name }}.zip.sha256
+          retention-days: 30ash -Algorithm SHA256 "${{ matrix.asset_name }}.zip").Hash
+          "$hash  ${{ matrix.asset_name }}.zip" | Out-File -FilePath "${{ matrix.asset_name }}.zip.sha256" -Encoding ASCII
       
       - name: Upload checksum
         uses: actions/upload-artifact@v4
@@ -125,8 +157,8 @@ jobs:
       
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
+        uses: softprops/action-gh-release@v1.zip/mth5-validator-windows-amd64.exe.zip
+            artifacts/mth5-validator-windows-amd64.exe.zip.sha256/mth5-validator-windows-amd64.exe.zip
           draft: false
           prerelease: false
           generate_release_notes: true

@@ -24,20 +24,22 @@ This is a standalone package that **does not require** the full mth5 installatio
 
 Download the latest executable for your platform from the [Releases page](https://github.com/MTgeophysics/mth5-validator/releases):
 
-- **Windows**: `mth5-validator-windows-amd64.exe`
+- **Windows**: `mth5-validator-windows-amd64.exe.zip` (extract the .exe from the .zip file)
 - **Linux**: `mth5-validator-linux-amd64`
 - **macOS**: `mth5-validator-macos-amd64`
 
 No Python installation needed! Just download and run:
 
 ```bash
-# Windows
+# Windows (extract the .zip first, then run)
 mth5-validator-windows-amd64.exe validate myfile.mth5
 
 # Linux/macOS (make executable first)
 chmod +x mth5-validator-linux-amd64
 ./mth5-validator-linux-amd64 validate myfile.mth5
 ```
+
+**Note for Windows users**: The executable is packaged in a .zip file to avoid browser download blocks. Simply extract the .exe from the .zip and run it. Windows may show a SmartScreen warning since the executable is not code-signed - click "More info" then "Run anyway" to proceed.
 
 ### Option 2: Install as Python Package
 
@@ -585,6 +587,7 @@ jobs:
             validator: mth5-validator-linux-amd64
           - os: windows-latest
             validator: mth5-validator-windows-amd64.exe
+            validator_zip: mth5-validator-windows-amd64.exe.zip
           - os: macos-latest
             validator: mth5-validator-macos-amd64
     
@@ -599,10 +602,11 @@ jobs:
           wget https://github.com/MTgeophysics/mth5-validator/releases/latest/download/${{ matrix.validator }}
           chmod +x ${{ matrix.validator }}
       
-      - name: Download validator (Windows)
+      - name: Download and extract validator (Windows)
         if: runner.os == 'Windows'
         run: |
-          curl -L -o ${{ matrix.validator }} https://github.com/MTgeophysics/mth5-validator/releases/latest/download/${{ matrix.validator }}
+          curl -L -o ${{ matrix.validator_zip }} https://github.com/MTgeophysics/mth5-validator/releases/latest/download/${{ matrix.validator_zip }}
+          Expand-Archive -Path ${{ matrix.validator_zip }} -DestinationPath . -Force
       
       - name: Validate files
         shell: bash
