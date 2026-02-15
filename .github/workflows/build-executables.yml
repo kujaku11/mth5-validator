@@ -1,0 +1,141 @@
+name: Build Executables
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: mth5-validator
+            asset_name: mth5-validator-linux-amd64
+          - os: windows-latest
+            artifact_name: mth5-validator.exe
+            asset_name: mth5-validator-windows-amd64.exe
+          - os: macos-latest
+            artifact_name: mth5-validator
+            asset_name: mth5-validator-macos-amd64
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Build executable
+        working-directory: src
+        run: python build_standalone_validator.py
+      
+      - name: Test executable (Linux/macOS)
+        if: runner.os != 'Windows'
+        working-directory: src
+        run: |
+          chmod +x dist/${{ matrix.artifact_name }}
+          ./dist/${{ matrix.artifact_name }} --help
+      
+      - name: Test executable (Windows)
+        if: runner.os == 'Windows'
+        working-directory: src
+        run: |
+          dist\${{ matrix.artifact_name }} --help
+      
+      - name: Get file size
+        id: filesize
+        shell: bash
+        working-directory: src
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            SIZE=$(stat -c%s "dist/${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "dist/${{ matrix.artifact_name }}")
+          else
+            SIZE=$(stat -c%s "dist/${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "dist/${{ matrix.artifact_name }}")
+          fi
+          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
+          echo "size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
+          echo "Executable size: $SIZE_MB MB"
+      
+      - name: Rename artifact
+        shell: bash
+        working-directory: src
+        run: |
+          cp dist/${{ matrix.artifact_name }} dist/${{ matrix.asset_name }}
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: src/dist/${{ matrix.asset_name }}
+          retention-days: 30
+      
+      - name: Create checksum
+        shell: bash
+        working-directory: src/dist
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            certutil -hashfile ${{ matrix.asset_name }} SHA256 > ${{ matrix.asset_name }}.sha256
+          else
+            shasum -a 256 ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
+          fi
+      
+      - name: Upload checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}.sha256
+          path: src/dist/${{ matrix.asset_name }}.sha256
+          retention-days: 30
+  
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Display structure of downloaded files
+        run: ls -R artifacts
+      
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/mth5-validator-linux-amd64/mth5-validator-linux-amd64
+            artifacts/mth5-validator-linux-amd64.sha256/mth5-validator-linux-amd64.sha256
+            artifacts/mth5-validator-windows-amd64.exe/mth5-validator-windows-amd64.exe
+            artifacts/mth5-validator-windows-amd64.exe.sha256/mth5-validator-windows-amd64.exe.sha256
+            artifacts/mth5-validator-macos-amd64/mth5-validator-macos-amd64
+            artifacts/mth5-validator-macos-amd64.sha256/mth5-validator-macos-amd64.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

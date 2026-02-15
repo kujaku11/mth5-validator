@@ -1,0 +1,66 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mth5-validator"
+version = "0.1.0"
+description = "Standalone validator for MTH5 (Magnetotelluric HDF5) files"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "MTH5 Development Team", email = "kujaku@usgs.gov"}
+]
+keywords = ["magnetotellurics", "HDF5", "validation", "geophysics"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+
+dependencies = [
+    "h5py>=3.0",
+]
+
+[project.optional-dependencies]
+build = [
+    "pyinstaller>=5.0",
+]
+dev = [
+    "pytest>=7.0",
+    "black>=22.0",
+    "flake8>=4.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/MTgeophysics/mth5-validator"
+Documentation = "https://github.com/MTgeophysics/mth5-validator/blob/main/README.md"
+Repository = "https://github.com/MTgeophysics/mth5-validator"
+Issues = "https://github.com/MTgeophysics/mth5-validator/issues"
+
+[project.scripts]
+mth5-validator = "mth5_validator_standalone:main"
+
+[tool.setuptools]
+packages = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "."
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

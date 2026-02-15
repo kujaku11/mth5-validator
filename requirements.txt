@@ -1,0 +1,5 @@
+# Runtime dependencies
+h5py>=3.0
+
+# Build dependencies (for creating executables)
+pyinstaller>=5.0
