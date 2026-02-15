@@ -11,7 +11,7 @@ This is a standalone package that **does not require** the full mth5 installatio
 ## Features
 
 - **File Format Validation**: Verify HDF5 file attributes (type, version, data level)
-- **Structure Validation**: Check group hierarchy based on file version (v0.1.0 or v0.2.0)
+- **Structure Validation**: Check group hierarchy based on file version (v0.1.1 or v0.2.0)
 - **Metadata Validation**: Basic metadata structure checks
 - **Data Validation**: Optional check for channel data integrity
 - **Lightweight**: Only depends on h5py (no scipy, numpy, obspy, etc.)
@@ -99,10 +99,10 @@ python src/mth5_validator_standalone.py validate myfile.mth5 --verbose
 ### File Format Checks
 
 - **file.type**: Must be "MTH5"
-- **file.version**: Must be "0.1.0" or "0.2.0"
+- **file.version**: Must be "0.1.1" or "0.2.0"
 - **data_level**: Must be 0, 1, or 2
 
-### Structure Checks (v0.1.0)
+### Structure Checks (v0.1.1)
 
 ```
 /Survey
@@ -317,7 +317,7 @@ This repository is configured with GitHub Actions to automatically build executa
 
 **On Push**: Artifacts are uploaded and available for download from the Actions tab.
 
-**On Tags** (e.g., `v0.1.0`): Executables are automatically attached to the GitHub Release.
+**On Tags** (e.g., `v0.1.1`): Executables are automatically attached to the GitHub Release.
 
 The workflow file is located at [.github/workflows/build-executables.yml](.github/workflows/build-executables.yml).
 
