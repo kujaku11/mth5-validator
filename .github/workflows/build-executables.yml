@@ -104,15 +104,20 @@ jobs:
           path: src/dist/${{ matrix.asset_name }}
           retention-days: 30
       
-      - name: Create checksum
+      - name: Create checksum for Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: src/dist
+        run: |
+          $hash = (Get-FileHash -Algorithm SHA256 "${{ matrix.asset_name }}").Hash
+          "$hash  ${{ matrix.asset_name }}" | Out-File -FilePath "${{ matrix.asset_name }}.sha256" -Encoding ASCII
+      
+      - name: Create checksum for Linux/macOS
+        if: runner.os != 'Windows'
         shell: bash
         working-directory: src/dist
         run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            certutil -hashfile ${{ matrix.asset_name }} SHA256 | findstr /v ":" | findstr /v "SHA" > ${{ matrix.asset_name }}.sha256
-          else
-            shasum -a 256 ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
-          fi
+          shasum -a 256 ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
       
       - name: Create checksum for Windows zip
         if: runner.os == 'Windows'
