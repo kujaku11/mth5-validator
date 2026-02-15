@@ -61,20 +61,16 @@ jobs:
         working-directory: src
         run: |
           dist\${{ matrix.artifact_name }} --help
-      
+
       - name: Get file size
         id: filesize
         shell: bash
         working-directory: src
         run: |
-          if [ "${{ runner.os }}" == "Windows" ]; then
             SIZE=$(stat -c%s "dist/${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "dist/${{ matrix.artifact_name }}")
-          else
-            SIZE=$(stat -c%s "dist/${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "dist/${{ matrix.artifact_name }}")
-          fi
-          SIZE_MB=$(echo "scale=2; $SIZE / 1048576" | bc)
-          echo "size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
-          echo "Executable size: $SIZE_MB MB"
+            SIZE_MB=$(python -c "print(f'{$SIZE / 1048576:.2f}')")
+            echo "size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
+            echo "Executable size: $SIZE_MB MB"
       
       - name: Rename artifact
         shell: bash
